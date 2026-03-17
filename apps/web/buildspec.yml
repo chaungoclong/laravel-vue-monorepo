@@ -6,25 +6,32 @@ phases:
       nodejs: 22
     commands:
       - npm install -g yarn
-      - yarn install --frozen-lockfile
+      # Di chuyển vào thư mục chứa package.json trước khi install
+      - cd apps/web && yarn install --frozen-lockfile
 
   build:
     commands:
       - echo "Building for $DEPLOY_ENV..."
+      # Đảm bảo các bin cục bộ (như run-p) có thể được tìm thấy
       - yarn build --mode $DEPLOY_ENV
 
   post_build:
     commands:
+      - pwd
       - echo "Build xong. Chuẩn bị đóng gói..."
+      # Tạo thư mục dist nếu nó chưa tồn tại (phòng hờ) và copy vào đúng chỗ
+      - mkdir -p dist
+      # Lưu ý: file appspec.yml và scripts thường nằm ở root project hoặc trong apps/web?
+      # Nếu chúng nằm ở root, bạn cần dùng đường dẫn ../../appspec.yml
       - cp appspec.yml dist/
       - cp -r scripts dist/
 
 artifacts:
   files:
     - '**/*'
-  base-directory: 'dist'
+  base-directory: apps/web/dist
 
 cache:
   paths:
-    - 'node_modules/**/*'
+    - 'apps/web/node_modules/**/*'
     - '$(yarn cache dir)/**/*'

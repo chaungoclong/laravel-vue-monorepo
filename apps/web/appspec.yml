@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /var/www/app/web/temp_release
+    destination: /var/www/laravel-vue/web/temp_release
 hooks:
   ApplicationStart:
     - location: scripts/deploy.sh
