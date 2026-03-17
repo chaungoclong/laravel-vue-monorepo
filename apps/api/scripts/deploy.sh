@@ -31,9 +31,6 @@ mkdir -p "$APP_DIR/releases"
 mkdir -p "$SHARED_DIR/storage/framework/"{cache,sessions,views,testing}
 mkdir -p "$SHARED_DIR/storage/logs"
 
-# 3. Di chuyển code và cấu hình file .env
-mv "$APP_DIR/temp_release" "$RELEASE_DIR"
-
 if [ -f "$RELEASE_DIR/.env.${ENV_NAME}" ]; then
     cp "$RELEASE_DIR/.env.${ENV_NAME}" "$SHARED_DIR/.env"
     echo "Đã cập nhật .env từ file .env.${ENV_NAME}"
