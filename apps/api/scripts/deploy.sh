@@ -7,6 +7,11 @@ RELEASE_DIR="$APP_DIR/releases/$TIMESTAMP"
 DEPLOY_USER="ec2-user"
 DEPLOY_GROUP="nginx"
 
+# 1. Bật chế độ debug và log toàn bộ output ra file
+set -xeuo pipefail
+LOG_FILE="/tmp/deploy_api.log"
+exec > >(tee "$LOG_FILE") 2>&1
+
 # 1. Xác định môi trường từ CodeDeploy (Mặc định là development nếu trống)
 # Chuyển tên Deployment Group về chữ thường (ví dụ: Production -> production)
 ENV_NAME=$(echo "${DEPLOYMENT_GROUP_NAME:-development}" | tr '[:upper:]' '[:lower:]')

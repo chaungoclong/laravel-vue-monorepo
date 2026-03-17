@@ -1,20 +1,30 @@
 version: 0.2
+
 phases:
   install:
     runtime-versions:
       nodejs: 22
+    commands:
+      - npm install -g yarn
+      - yarn install --frozen-lockfile
+
   build:
     commands:
-      - cd web
-      - echo "Bắt đầu build Frontend Vue3..."
-      - npm install
-      - npm run build
+      - echo "Building for $DEPLOY_ENV..."
+      - yarn build --mode $DEPLOY_ENV
+
   post_build:
     commands:
-      - echo "Đưa cấu hình deploy vào thư mục dist..."
-      - cp appspec.yml dist/appspec.yml
-      - cp -r scripts dist/scripts
+      - echo "Build xong. Chuẩn bị đóng gói..."
+      - cp appspec.yml dist/
+      - cp -r scripts dist/
+
 artifacts:
-  base-directory: web/dist
   files:
     - '**/*'
+  base-directory: 'dist'
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - '$(yarn cache dir)/**/*'
