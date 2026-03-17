@@ -1,0 +1,20 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+  build:
+    commands:
+      - cd web
+      - echo "Bắt đầu build Frontend Vue3..."
+      - npm install
+      - npm run build
+  post_build:
+    commands:
+      - echo "Đưa cấu hình deploy vào thư mục dist..."
+      - cp appspec.yml dist/appspec.yml
+      - cp -r scripts dist/scripts
+artifacts:
+  base-directory: web/dist
+  files:
+    - '**/*'
