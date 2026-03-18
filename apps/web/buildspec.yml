@@ -32,6 +32,6 @@ artifacts:
   base-directory: apps/web/dist
 
 cache:
+  key: node-modules-$(codebuild-hash-files 'apps/web/yarn.lock')
   paths:
     - 'apps/web/node_modules/**/*'
-    - '$(yarn cache dir)/**/*'
