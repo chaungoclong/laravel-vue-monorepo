@@ -6,6 +6,7 @@ interface ApiResponse {
   message: string
   time: string
 }
+const baseApiUrl = import.meta.env.VITE_API_URL || "http://localhost/api"
 
 const data = ref<ApiResponse | null>(null)
 const loading = ref<boolean>(false)
@@ -16,7 +17,7 @@ const fetchApi = async (): Promise<void> => {
   error.value = null
 
   try {
-    const response = await fetch("http://localhost:8080/api/test")
+    const response = await fetch(`${baseApiUrl}/test`)
 
     if (!response.ok) {
       throw new Error("API request failed")
