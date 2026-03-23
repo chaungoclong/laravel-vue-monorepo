@@ -15,12 +15,12 @@ exec > >(tee "$LOG_FILE") 2>&1
 # 1. Xác định môi trường từ CodeDeploy (Mặc định là development nếu trống)
 # Chuyển tên Deployment Group về chữ thường (ví dụ: Production -> production)
 DEPLOYMENT_GROUP_NAME_LOWER=$(echo "${DEPLOYMENT_GROUP_NAME}" | tr '[:upper:]' '[:lower:]')
-echo "Deployment group: $GROUP_NAME"
+echo "Deployment group: $DEPLOYMENT_GROUP_NAME_LOWER"
 
-if [[ "$GROUP_NAME" == *"-prod-"* ]]; then
+if [[ "$DEPLOYMENT_GROUP_NAME_LOWER" == *"-prod-"* ]]; then
     APP_ENV=production
     ENV_FILE=".env.production"
-elif [[ "$GROUP_NAME" == *"-dev-"* ]]; then
+elif [[ "$DEPLOYMENT_GROUP_NAME_LOWER" == *"-dev-"* ]]; then
     APP_ENV=local
     ENV_FILE=".env.development"
 else
@@ -57,6 +57,8 @@ rm -rf "$RELEASE_DIR/storage"
 ln -nfs "$SHARED_DIR/storage" "$RELEASE_DIR/storage"
 ln -nfs "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
 
+cat "$RELEASE_DIR/${ENV_FILE}"
+
 # 5. Phân quyền
 chown -R $DEPLOY_USER:$DEPLOY_GROUP "$SHARED_DIR"
 chown -R $DEPLOY_USER:$DEPLOY_GROUP "$RELEASE_DIR"
@@ -65,6 +67,7 @@ chmod -R 775 "$RELEASE_DIR/storage" "$RELEASE_DIR/bootstrap/cache"
 # 6. Tối ưu hóa Laravel
 cd "$RELEASE_DIR"
 # Chỉ chạy migrate nếu là môi trường production hoặc tùy mục đích của bạn
+php artisan config:clear
 php artisan migrate --force
 php artisan optimize:clear
 php artisan optimize
