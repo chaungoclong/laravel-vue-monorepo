@@ -14,9 +14,23 @@ exec > >(tee "$LOG_FILE") 2>&1
 
 # 1. Xác định môi trường từ CodeDeploy (Mặc định là development nếu trống)
 # Chuyển tên Deployment Group về chữ thường (ví dụ: Production -> production)
-ENV_NAME=$(echo "${DEPLOYMENT_GROUP_NAME:-development}" | tr '[:upper:]' '[:lower:]')
+DEPLOYMENT_GROUP_NAME_LOWER=$(echo "${DEPLOYMENT_GROUP_NAME}" | tr '[:upper:]' '[:lower:]')
+echo "Deployment group: $GROUP_NAME"
 
-echo "Bắt đầu deploy API cho môi trường: $ENV_NAME"
+if [[ "$GROUP_NAME" == *"-prod-"* ]]; then
+    APP_ENV=production
+    ENV_FILE=".env.production"
+elif [[ "$GROUP_NAME" == *"-dev-"* ]]; then
+    APP_ENV=local
+    ENV_FILE=".env.development"
+else
+    echo "Lỗi: Không xác định được môi trường!"
+    exit 1
+fi
+
+echo "Deploying with APP_ENV=$APP_ENV"
+
+mkdir -p "$APP_DIR/releases"
 
 # Đảm bảo appspec.yml đã copy code vào $APP_DIR/temp_release
 if [ -d "$APP_DIR/temp_release" ]; then
@@ -31,11 +45,11 @@ mkdir -p "$APP_DIR/releases"
 mkdir -p "$SHARED_DIR/storage/framework/"{cache,sessions,views,testing}
 mkdir -p "$SHARED_DIR/storage/logs"
 
-if [ -f "$RELEASE_DIR/.env.${ENV_NAME}" ]; then
-    cp "$RELEASE_DIR/.env.${ENV_NAME}" "$SHARED_DIR/.env"
-    echo "Đã cập nhật .env từ file .env.${ENV_NAME}"
+if [ -f "$RELEASE_DIR/${ENV_FILE}" ]; then
+    cp "$RELEASE_DIR/${ENV_FILE}" "$SHARED_DIR/.env"
+    echo "Đã cập nhật .env từ file ${ENV_FILE}"
 else
-    echo "Cảnh báo: Không tìm thấy file .env.${ENV_NAME}, giữ nguyên .env cũ."
+    echo "Cảnh báo: Không tìm thấy file ${ENV_FILE}, giữ nguyên .env cũ."
 fi
 
 # 4. Tạo Symlink cho Storage và Env
@@ -63,4 +77,4 @@ ln -nfs "$RELEASE_DIR" "$APP_DIR/current"
 cd "$APP_DIR/releases"
 ls -dt */ | tail -n +4 | xargs -r rm -rf
 
-echo "Deploy Backend cho $ENV_NAME hoàn tất!"
+echo "Deploy Backend cho $APP_ENV hoàn tất!"

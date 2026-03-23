@@ -1,0 +1,13 @@
+project               = "laravel-vue-monorepo"
+env                   = "dev"
+location              = "apse1"
+region                = "ap-southeast-1"
+github_connection_arn = "arn:aws:codeconnections:ap-southeast-1:225828829859:connection/944fad94-4ff1-442d-aa8d-0c3c549476c2"
+# github_repo           = "chaungoclong/laravel-vue-monorepo"
+# github_branch         = "main"
+
+# Tham số Database cho môi trường DEV
+mysql_root_pass = "Root@StrongPass2026!"
+db_name         = "app"
+db_user         = "app"
+db_pass         = "MyDb@User2026!"
