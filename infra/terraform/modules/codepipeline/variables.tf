@@ -1,0 +1,14 @@
+variable "project" { type = string }
+variable "env" { type = string }
+variable "location" { type = string }
+variable "artifacts_bucket" { type = string }
+variable "codepipeline_role_arn" { type = string }
+variable "github_connection_arn" { type = string }
+variable "github_repo" { type = string }
+variable "github_branch" { type = string }
+variable "codebuild_api_name" { type = string }
+variable "codebuild_web_name" { type = string }
+variable "codedeploy_api_name" { type = string }
+variable "codedeploy_web_name" { type = string }
+variable "codedeploy_api_deployment_group_name" { type = string }
+variable "codedeploy_web_deployment_group_name" { type = string }

@@ -74,16 +74,53 @@ module "ec2" {
 }
 
 
-module "pipeline" {
-  source                = "../../modules/pipeline"
-  project               = var.project
-  env                   = var.env
-  location              = var.location
-  artifacts_bucket      = module.s3.artifacts_bucket_id
-  codebuild_role_arn    = module.iam.codebuild_role_arn
-  codedeploy_role_arn   = module.iam.codedeploy_role_arn
-  codepipeline_role_arn = module.iam.codepipeline_role_arn
-  github_branch         = var.github_branch
-  github_connection_arn = var.github_connection_arn
-  github_repo           = var.github_repo
+# module "pipeline" {
+#   source                = "../../modules/pipeline"
+#   project               = var.project
+#   env                   = var.env
+#   location              = var.location
+#   artifacts_bucket      = module.s3.artifacts_bucket_id
+#   codebuild_role_arn    = module.iam.codebuild_role_arn
+#   codedeploy_role_arn   = module.iam.codedeploy_role_arn
+#   codepipeline_role_arn = module.iam.codepipeline_role_arn
+#   github_branch         = var.github_branch
+#   github_connection_arn = var.github_connection_arn
+#   github_repo           = var.github_repo
+# }
+
+
+module "codebuild" {
+  source             = "../../modules/codebuild"
+  project            = var.project
+  env                = var.env
+  location           = var.location
+  artifacts_bucket   = module.s3.artifacts_bucket_id
+  codebuild_role_arn = module.iam.codebuild_role_arn
+}
+
+
+module "codedeploy" {
+  source              = "../../modules/codedeploy"
+  project             = var.project
+  env                 = var.env
+  location            = var.location
+  codedeploy_role_arn = module.iam.codedeploy_role_arn
+}
+
+module "codepipeline" {
+  source                               = "../../modules/codepipeline"
+  project                              = var.project
+  env                                  = var.env
+  location                             = var.location
+  artifacts_bucket                     = module.s3.artifacts_bucket_id
+  codepipeline_role_arn                = module.iam.codepipeline_role_arn
+  github_connection_arn                = var.github_connection_arn
+  github_repo                          = var.github_repo
+  github_branch                        = var.github_branch
+  codebuild_api_name                   = module.codebuild.codebuild_api_name
+  codebuild_web_name                   = module.codebuild.codebuild_web_name
+  codedeploy_api_name                  = module.codedeploy.codedeploy_api_name
+  codedeploy_web_name                  = module.codedeploy.codedeploy_web_name
+  codedeploy_api_deployment_group_name = module.codedeploy.codedeploy_api_deployment_group_name
+  codedeploy_web_deployment_group_name = module.codedeploy.codedeploy_web_deployment_group_name
 }
