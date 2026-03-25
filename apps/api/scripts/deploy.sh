@@ -90,9 +90,19 @@ sudo systemctl reload php-fpm.service
 # Load lại NGINX
 sudo systemctl reload nginx
 
-# Khởi động lại Supervisor để nhận code mới cho Queue Workers
-sudo supervisorctl reread
-sudo supervisorctl update
+# Khởi động lại Supervisor - Thêm kiểm tra trạng thái trước
+if sudo systemctl is-active --quiet supervisord; then
+    sudo supervisorctl reread
+    sudo supervisorctl update
+    # Restart cụ thể các queue workers nếu bạn có đặt tên group
+    # sudo supervisorctl restart all
+    echo "Supervisor updated successfully."
+else
+    echo "Cảnh báo: Supervisor không chạy. Đang thử khởi động lại..."
+    sudo systemctl start supervisord
+fi
+
+# Luôn chạy lệnh này để báo hiệu cho workers tự thoát khi xong job
 php artisan queue:restart
 
 # 9. Dọn dẹp: Chỉ giữ lại 3 bản deploy gần nhất
