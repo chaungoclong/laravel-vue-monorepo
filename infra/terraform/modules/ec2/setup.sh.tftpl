@@ -119,6 +119,21 @@ serverurl=unix:///var/run/supervisor.sock
 files = /etc/supervisor/conf.d/*.conf
 SUPERVISOR_EOF
 
+cat > /etc/supervisor/conf.d/${PROJECT_NAME}-worker.conf <<'SUPERVISOR_EOF'
+[program:${PROJECT_NAME}-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/${PROJECT_NAME}/api/current/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=ec2-user
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/${PROJECT_NAME}/api/current/storage/logs/worker.log
+stopwaitsecs=3600
+SUPERVISOR_EOF
+
 cat > /usr/lib/systemd/system/supervisord.service <<'SYSTEMD_EOF'
 [Unit]
 Description=Supervisor process control system for UNIX

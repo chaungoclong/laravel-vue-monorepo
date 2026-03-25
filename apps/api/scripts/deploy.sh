@@ -57,8 +57,6 @@ rm -rf "$RELEASE_DIR/storage"
 ln -nfs "$SHARED_DIR/storage" "$RELEASE_DIR/storage"
 ln -nfs "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
 
-cat "$RELEASE_DIR/${ENV_FILE}"
-
 # 5. Phân quyền
 chown -R $DEPLOY_USER:$DEPLOY_GROUP "$SHARED_DIR"
 chown -R $DEPLOY_USER:$DEPLOY_GROUP "$RELEASE_DIR"
@@ -66,7 +64,6 @@ chmod -R 775 "$RELEASE_DIR/storage" "$RELEASE_DIR/bootstrap/cache"
 
 # 6. Tối ưu hóa Laravel
 cd "$RELEASE_DIR"
-# Chỉ chạy migrate nếu là môi trường production hoặc tùy mục đích của bạn
 php artisan config:clear
 php artisan migrate --force
 php artisan optimize:clear
@@ -76,8 +73,25 @@ php artisan storage:link
 # 7. Atomic Deploy: Cập nhật symlink 'current'
 ln -nfs "$RELEASE_DIR" "$APP_DIR/current"
 
-# 8. Dọn dẹp: Chỉ giữ lại 3 bản deploy gần nhất
+cd "$APP_DIR/current"
+
+# 8. RESTART SERVICES (QUAN TRỌNG)
+echo "Đang làm mới bộ nhớ cache và restart workers..."
+
+# Khởi động lại PHP-FPM để xóa OPcache
+sudo systemctl reload php-fpm.service
+
+# Load lại NGINX
+sudo systemctl reload nginx
+
+# Khởi động lại Supervisor để nhận code mới cho Queue Workers
+sudo supervisorctl reread
+sudo supervisorctl update
+php artisan queue:restart
+
+# 9. Dọn dẹp: Chỉ giữ lại 3 bản deploy gần nhất
 cd "$APP_DIR/releases"
-ls -dt */ | tail -n +4 | xargs -r rm -rf
+# Sửa lỗi nhẹ: ls -dt trả về tên kèm '/', tail -n +4 lấy từ dòng thứ 4 trở đi
+ls -1dt $APP_DIR/releases/* | tail -n +4 | xargs -d '\n' rm -rf
 
 echo "Deploy Backend cho $APP_ENV hoàn tất!"
