@@ -12,6 +12,12 @@ set -xeuo pipefail
 LOG_FILE="/tmp/deploy_api.log"
 exec > >(tee "$LOG_FILE") 2>&1
 
+# Đợi cho đến khi một file "ready" xuất hiện (file này được tạo ở cuối user_data)
+while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
+  echo "Waiting for user_data to finish..."
+  sleep 10
+done
+
 # 1. Xác định môi trường từ CodeDeploy (Mặc định là development nếu trống)
 # Chuyển tên Deployment Group về chữ thường (ví dụ: Production -> production)
 DEPLOYMENT_GROUP_NAME_LOWER=$(echo "${DEPLOYMENT_GROUP_NAME}" | tr '[:upper:]' '[:lower:]')
