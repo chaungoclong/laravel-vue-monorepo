@@ -68,7 +68,7 @@ Route::post('v1/test-upload', static function (Request $request) {
 Route::post('v1/test-queue', static function (Request $request) {
 	$startTime = Carbon::now();
 
-	Log::info('Test Queue API (Closure) called at: ' . $startTime->toDateTimeString());
+	Log::info('Test Queue API (Closure) V2 called at: ' . $startTime->toDateTimeString());
 
 	// Validate dữ liệu từ request
 	$data = $request->validate([
