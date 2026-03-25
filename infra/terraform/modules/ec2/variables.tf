@@ -1,33 +1,56 @@
-variable "project" { type = string }
-variable "env" { type = string }
-variable "location" { type = string }
-variable "region" {
-  type = string
-  default = "ap-southeast-1"
+variable "project_name" {
+  description = "Tên dự án"
+  type        = string
 }
-variable "instance_type" { type = string }
-variable "iam_instance_profile" { type = string }
-variable "vpc_id" { type = string }
-variable "subnet_id" { type = string }
 
-# Thêm các biến bảo mật cho Database
-variable "mysql_root_pass" {
-  type = string
-  sensitive = true
-  description = "Mật khẩu root của MySQL"
+variable "environment" {
+  description = "Môi trường triển khai"
+  type        = string
 }
+
+variable "aws_region" {
+  description = "AWS Region"
+  type        = string
+}
+
+variable "ec2_instance_type" {
+  description = "Loại EC2 instance"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "ID của VPC"
+  type        = string
+}
+
+variable "subnet_id" {
+  description = "ID của Subnet triển khai EC2"
+  type        = string
+}
+
+variable "iam_instance_profile_name" {
+  description = "Tên của IAM Instance Profile để gắn vào EC2"
+  type        = string
+}
+
 variable "db_name" {
-  type = string
-  default = "app"
-  description = "Tên Database ứng dụng"
+  description = "Tên Database"
+  type        = string
 }
-variable "db_user" {
-  type = string
-  default = "app"
-  description = "User truy cập Database"
+
+variable "db_username" {
+  description = "User Database"
+  type        = string
 }
-variable "db_pass" {
-  type = string
-  sensitive = true
-  description = "Mật khẩu truy cập Database của User"
+
+variable "db_password" {
+  description = "Mật khẩu User Database"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_root_password" {
+  description = "Mật khẩu Root MySQL"
+  type        = string
+  sensitive   = true
 }

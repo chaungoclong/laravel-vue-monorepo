@@ -4,7 +4,7 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Môi trường triển khai (dev, stg, prod...)"
+  description = "Môi trường triển khai"
   type        = string
 }
 
@@ -13,7 +13,7 @@ variable "aws_region" {
   type        = string
 }
 
-variable "aws_account_id" {
-  description = "ID của AWS Account"
+variable "iam_role_arn" {
+  description = "ARN của IAM Role cho CodeDeploy"
   type        = string
 }
