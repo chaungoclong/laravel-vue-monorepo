@@ -19,18 +19,27 @@ echo "[Bước 1/12] Đang cập nhật hệ điều hành..."
 dnf update -y
 echo "✅ Cập nhật hệ điều hành thành công."
 
-echo "[Bước 2/12] Đang cài đặt Nginx..."
+echo "[Bước 2/12] Đang cài đặt AWS CodeDeploy Agent..."
+dnf install -y ruby wget
+cd /home/ec2-user
+wget -q https://aws-codedeploy-${AWS_REGION}.s3.${AWS_REGION}.amazonaws.com/latest/install
+chmod +x ./install
+./install auto
+systemctl start codedeploy-agent
+echo "✅ Cài đặt AWS CodeDeploy Agent thành công."
+
+echo "[Bước 3/12] Đang cài đặt Nginx..."
 dnf install -y nginx
 systemctl enable nginx
 systemctl start nginx
 echo "✅ Cài đặt và khởi động Nginx thành công."
 
-echo "[Bước 3/12] Đang cài đặt PHP 8.4 và các extension..."
+echo "[Bước 4/12] Đang cài đặt PHP 8.4 và các extension..."
 dnf install -y php8.4 php8.4-fpm php8.4-pdo php8.4-mysqlnd php8.4-mbstring \
 php8.4-xml php8.4-zip php8.4-gd php8.4-intl php8.4-bcmath php-pecl-redis
 echo "✅ Cài đặt PHP 8.4 thành công."
 
-echo "[Bước 4/12] Đang cấu hình và tối ưu hóa PHP-FPM..."
+echo "[Bước 5/12] Đang cấu hình và tối ưu hóa PHP-FPM..."
 sed -i 's/user = apache/user = nginx/g' /etc/php-fpm.d/www.conf
 sed -i 's/group = apache/group = nginx/g' /etc/php-fpm.d/www.conf
 sed -i 's/listen.owner = nobody/listen.owner = nginx/g' /etc/php-fpm.d/www.conf
@@ -47,7 +56,7 @@ systemctl enable php-fpm
 systemctl start php-fpm
 echo "✅ Cấu hình và khởi động PHP-FPM thành công."
 
-echo "[Bước 5/12] Đang cài đặt MySQL 8..."
+echo "[Bước 6/12] Đang cài đặt MySQL 8..."
 wget -q https://dev.mysql.com/get/mysql80-community-release-el9-4.noarch.rpm
 dnf install -y mysql80-community-release-el9-4.noarch.rpm
 rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
@@ -56,29 +65,29 @@ systemctl enable mysqld
 systemctl start mysqld
 echo "✅ Cài đặt và khởi động MySQL 8 thành công."
 
-echo "[Bước 6/12] Đang thiết lập Database và User MySQL..."
+echo "[Bước 7/12] Đang thiết lập Database và User MySQL..."
 # Chờ MySQL khởi động và tạo mật khẩu tạm thời hoàn tất
 while ! grep -q 'temporary password' /var/log/mysqld.log; do
 sleep 1
 done
 
 TEMP_PASS=$(grep 'temporary password' /var/log/mysqld.log | tail -n 1 | awk '{print $NF}')
-mysql -u root -p"$TEMP_PASS" --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${mysql_root_pass}';"
-mysql -u root -p"${mysql_root_pass}" <<'MYSQL_EOF'
-CREATE DATABASE IF NOT EXISTS `${db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${db_user}'@'localhost' IDENTIFIED BY '${db_pass}';
-GRANT ALL PRIVILEGES ON `${db_name}`.* TO '${db_user}'@'localhost';
+mysql -u root -p"$TEMP_PASS" --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASSWORD}';"
+mysql -u root -p"${DB_ROOT_PASSWORD}" <<'MYSQL_EOF'
+CREATE DATABASE IF NOT EXISTS `${DB_NAME}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '${DB_USERNAME}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
+GRANT ALL PRIVILEGES ON `${DB_NAME}`.* TO '${DB_USERNAME}'@'localhost';
 FLUSH PRIVILEGES;
 MYSQL_EOF
 echo "✅ Khởi tạo Database thành công."
 
-echo "[Bước 7/12] Đang cài đặt Redis..."
+echo "[Bước 8/12] Đang cài đặt Redis..."
 dnf install -y redis6
 systemctl enable redis6
 systemctl start redis6
 echo "✅ Cài đặt và khởi động Redis thành công."
 
-echo "[Bước 8/12] Đang cài đặt Supervisor..."
+echo "[Bước 9/12] Đang cài đặt Supervisor..."
 dnf install -y python3 python3-pip
 pip3 install supervisor --quiet
 
@@ -133,13 +142,13 @@ systemctl enable supervisord
 systemctl start supervisord
 echo "✅ Cài đặt và khởi động Supervisor thành công."
 
-echo "[Bước 9/12] Đang thiết lập User và quyền thư mục dự án..."
+echo "[Bước 10/12] Đang thiết lập User và quyền thư mục dự án..."
 usermod -a -G nginx ec2-user
-mkdir -p /var/www/${project}
-chown -R ec2-user:nginx /var/www/${project}
+mkdir -p /var/www/${PROJECT_NAME}
+chown -R ec2-user:nginx /var/www/${PROJECT_NAME}
 echo "✅ Thiết lập quyền thư mục thành công."
 
-echo "[Bước 10/12] Đang cấu hình Nginx..."
+echo "[Bước 11/12] Đang cấu hình Nginx..."
 cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
 cat > /etc/nginx/nginx.conf <<'NGINX_MAIN_EOF'
 user nginx;
@@ -168,39 +177,94 @@ include /etc/nginx/conf.d/*.conf;
 }
 NGINX_MAIN_EOF
 
-cat > /etc/nginx/conf.d/default.conf <<'NGINX_CONF_EOF'
+cat > /etc/nginx/conf.d/${PROJECT_NAME}.conf <<'NGINX_CONF_EOF'
 server {
-listen       80;
-listen       [::]:80;
-server_name  _;
-root         /usr/share/nginx/html;
-include /etc/nginx/default.d/*.conf;
-error_page 404 /404.html;
-location = /404.html { }
-error_page 500 502 503 504 /50x.html;
-location = /50x.html { }
+    listen 80;
+
+    # Increase upload limit (Nginx default is only 1MB)
+    client_max_body_size 50M;
+
+    index index.php index.html;
+
+    # SPA Mode: Redirect 404 errors to index.html for Vue Router handling
+    error_page 404 = /index.html;
+
+    # =====================================================
+    # 1. FRONTEND (VUE.JS)
+    # =====================================================
+    location / {
+        root /var/www/laravel-vue/web/current; # Directory containing Vue.js index.html
+        # Check for physical file, if not found, return index.html (for Vue Router)
+        try_files $uri $uri/ /index.html;
+    }
+
+    # =====================================================
+    # 2. MEDIA & UPLOAD (LARAVEL STORAGE)
+    # =====================================================
+    location ~ ^/storage/ {
+        # Point directly to API public directory (where the 'storage' symlink exists)
+        root /var/www/laravel-vue/api/current/public;
+
+        try_files $uri =404;
+
+        # Optimization: Browser cache for 1 year & disable logs to reduce server load
+        expires 1y;
+        add_header Cache-Control "public, no-transform";
+
+        # CORS: Allow resources (images/videos) to be fetched from different domains
+        add_header Access-Control-Allow-Origin *;
+        access_log off;
+    }
+
+    # =====================================================
+    # 3. BACKEND (LARAVEL API)
+    # =====================================================
+    location /api {
+        root /var/www/laravel-vue/api/current/public;
+        # If file is not found, pass request to Laravel (index.php)
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Internal processing for Laravel (Entry point)
+    location = /index.php {
+        internal; # Block direct user access via domain.com/index.php
+
+        root /var/www/laravel-vue/api/current/public;
+        fastcgi_intercept_errors on;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_pass unix:/run/php-fpm/www.sock;
+    }
+
+    # =====================================================
+    # 4. SECURITY
+    # =====================================================
+
+    # Block execution of unknown PHP files in Frontend directory, force redirect to index.html
+    location ~ \.php$ {
+        root /var/www/laravel-vue/web/current;
+        rewrite ^ /index.html break;
+    }
+
+    # Block access to sensitive files (e.g., .env, .git)
+    location ~ /\. {
+        deny all;
+    }
 }
 NGINX_CONF_EOF
 
 systemctl restart nginx
 echo "✅ Cấu hình Nginx thành công."
 
-echo "[Bước 11/12] Đang cài đặt Composer..."
+echo "[Bước 12/12] Đang cài đặt Composer..."
 export HOME=/home/ec2-user
 export COMPOSER_HOME=/home/ec2-user/.config/composer
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 php composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
 php -r "unlink('composer-setup.php');"
 echo "✅ Cài đặt Composer thành công."
-
-echo "[Bước 12/12] Đang cài đặt AWS CodeDeploy Agent..."
-dnf install -y ruby wget
-cd /home/ec2-user
-wget -q https://aws-codedeploy-${aws_region}.s3.${aws_region}.amazonaws.com/latest/install
-chmod +x ./install
-./install auto
-systemctl start codedeploy-agent
-echo "✅ Cài đặt AWS CodeDeploy Agent thành công."
 
 echo "=========================================="
 echo "🎉 HOÀN TẤT THIẾT LẬP SERVER!"

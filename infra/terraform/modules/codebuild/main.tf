@@ -1,6 +1,6 @@
 resource "aws_codebuild_project" "api" {
-  name         = "${var.project}-${var.env}-cb-${var.location}-api"
-  service_role = var.codebuild_role_arn
+  name         = "${var.project_name}-${var.environment}-cb-${var.aws_region}-api"
+  service_role = var.iam_role_arn
 
   artifacts { type = "CODEPIPELINE" }
 
@@ -16,20 +16,25 @@ resource "aws_codebuild_project" "api" {
     buildspec = "apps/api/buildspec.yml" # Đường dẫn file buildspec của API trong Monorepo
   }
 
+  cache {
+    type  = "LOCAL"
+    modes = ["LOCAL_CUSTOM_CACHE"]
+  }
+
   logs_config {
     cloudwatch_logs {
       status = "DISABLED" # Tắt log CloudWatch để tránh tốn phí
     }
     s3_logs {
       status   = "ENABLED"
-      location = "${var.artifacts_bucket}/logs/api" # Lưu log build của API vào S3 thay vì CloudWatch
+      location = "${var.s3_bucket_artifacts_id}/logs/api" # Lưu log build của API vào S3 thay vì CloudWatch
     }
   }
 }
 
 resource "aws_codebuild_project" "web" {
-  name         = "${var.project}-${var.env}-cb-${var.location}-web"
-  service_role = var.codebuild_role_arn
+  name         = "${var.project_name}-${var.environment}-cb-${var.aws_region}-web"
+  service_role = var.iam_role_arn
 
   artifacts { type = "CODEPIPELINE" }
 
@@ -41,7 +46,7 @@ resource "aws_codebuild_project" "web" {
 
     environment_variable {
       name  = "DEPLOY_ENV" # Biến môi trường này sẽ được truyền vào buildspec để phân biệt giữa API và Web khi chạy build
-      value = var.env
+      value = var.environment
     }
   }
 
@@ -50,13 +55,18 @@ resource "aws_codebuild_project" "web" {
     buildspec = "apps/web/buildspec.yml" # Đường dẫn file buildspec của Web trong Monorepo
   }
 
+  cache {
+    type  = "LOCAL"
+    modes = ["LOCAL_CUSTOM_CACHE"]
+  }
+
   logs_config {
     cloudwatch_logs {
       status = "DISABLED" # Tắt log CloudWatch để tránh tốn phí
     }
     s3_logs {
       status   = "ENABLED"
-      location = "${var.artifacts_bucket}/logs/web" # Lưu log build của Web vào S3 thay vì CloudWatch
+      location = "${var.s3_bucket_artifacts_id}/logs/web" # Lưu log build của Web vào S3 thay vì CloudWatch
     }
   }
 }

@@ -1,6 +1,6 @@
 # Bucket lưu trữ Artifacts cho CI/CD
 resource "aws_s3_bucket" "artifacts" {
-  bucket        = "${var.project}-${var.env}-s3-${var.location}-artifacts-${var.account_id}"
+  bucket        = "${var.project_name}-${var.environment}-s3-${var.aws_region}-artifacts-${var.aws_account_id}"
   force_destroy = true
 }
 
@@ -14,7 +14,7 @@ resource "aws_s3_bucket_public_access_block" "artifacts_block" {
 
 # Bucket lưu trữ Application Data
 resource "aws_s3_bucket" "app_data" {
-  bucket        = "${var.project}-${var.env}-s3-${var.location}-appdata-${var.account_id}"
+  bucket        = "${var.project_name}-${var.environment}-s3-${var.aws_region}-appdata-${var.aws_account_id}"
   force_destroy = true
 }
 

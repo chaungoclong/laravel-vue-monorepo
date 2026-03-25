@@ -2,7 +2,7 @@
 # 1. EC2 Instance Role & Profile
 # ==========================================
 resource "aws_iam_role" "ec2" {
-  name = "${var.project}-${var.env}-iam-${var.location}-ec2role"
+  name = "${var.project_name}-${var.environment}-iam-${var.aws_region}-ec2role"
   assume_role_policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" } }]
@@ -16,7 +16,7 @@ resource "aws_iam_role_policy_attachment" "ec2_codedeploy" {
 }
 
 resource "aws_iam_instance_profile" "ec2" {
-  name = "${var.project}-${var.env}-iam-${var.location}-ec2profile"
+  name = "${var.project_name}-${var.environment}-iam-${var.aws_region}-ec2profile"
   role = aws_iam_role.ec2.name
 }
 
@@ -24,7 +24,7 @@ resource "aws_iam_instance_profile" "ec2" {
 # 2. CodeDeploy Role
 # ==========================================
 resource "aws_iam_role" "codedeploy" {
-  name = "${var.project}-${var.env}-iam-${var.location}-deployrole"
+  name = "${var.project_name}-${var.environment}-iam-${var.aws_region}-deployrole"
   assume_role_policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "codedeploy.amazonaws.com" } }]
@@ -41,7 +41,7 @@ resource "aws_iam_role_policy_attachment" "codedeploy_managed" {
 # 3. CodeBuild Role
 # ==========================================
 resource "aws_iam_role" "codebuild" {
-  name = "${var.project}-${var.env}-iam-${var.location}-buildrole"
+  name = "${var.project_name}-${var.environment}-iam-${var.aws_region}-buildrole"
   assume_role_policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "codebuild.amazonaws.com" } }]
@@ -59,18 +59,18 @@ resource "aws_iam_role_policy" "codebuild_policy" {
         Effect = "Allow",
         Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
         Resource = [
-          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/codebuild/${var.project}-${var.env}-cb-${var.location}-api",
-          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/codebuild/${var.project}-${var.env}-cb-${var.location}-api:*",
-          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/codebuild/${var.project}-${var.env}-cb-${var.location}-web",
-          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/codebuild/${var.project}-${var.env}-cb-${var.location}-web:*"
+          "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/aws/codebuild/${var.project_name}-${var.environment}-cb-${var.aws_region}-api",
+          "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/aws/codebuild/${var.project_name}-${var.environment}-cb-${var.aws_region}-api:*",
+          "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/aws/codebuild/${var.project_name}-${var.environment}-cb-${var.aws_region}-web",
+          "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/aws/codebuild/${var.project_name}-${var.environment}-cb-${var.aws_region}-web:*"
         ]
       },
       {
         Effect = "Allow",
         Action = ["s3:PutObject", "s3:GetObject", "s3:GetObjectVersion", "s3:GetBucketAcl", "s3:GetBucketLocation", "s3:ListBucket"],
         Resource = [
-          var.s3_artifacts_arn,
-          "${var.s3_artifacts_arn}/*"
+          var.s3_bucket_artifacts_arn,
+          "${var.s3_bucket_artifacts_arn}/*"
         ]
       },
       {
@@ -80,8 +80,8 @@ resource "aws_iam_role_policy" "codebuild_policy" {
           "codebuild:BatchPutTestCases", "codebuild:BatchPutCodeCoverages"
         ],
         Resource = [
-          "arn:aws:codebuild:${var.region}:${var.account_id}:report-group/${var.project}-${var.env}-cb-${var.location}-api-*",
-          "arn:aws:codebuild:${var.region}:${var.account_id}:report-group/${var.project}-${var.env}-cb-${var.location}-web-*"
+          "arn:aws:codebuild:${var.aws_region}:${var.aws_account_id}:report-group/${var.project_name}-${var.environment}-cb-${var.aws_region}-api-*",
+          "arn:aws:codebuild:${var.aws_region}:${var.aws_account_id}:report-group/${var.project_name}-${var.environment}-cb-${var.aws_region}-web-*"
         ]
       },
       {
@@ -90,7 +90,7 @@ resource "aws_iam_role_policy" "codebuild_policy" {
           "codestar-connections:GetConnectionToken", "codestar-connections:GetConnection",
           "codeconnections:GetConnectionToken", "codeconnections:GetConnection", "codeconnections:UseConnection"
         ],
-        Resource = [var.codestar_connection_arn]
+        Resource = [var.github_connection_arn]
       }
     ]
   })
@@ -100,7 +100,7 @@ resource "aws_iam_role_policy" "codebuild_policy" {
 # 4. CodePipeline Role
 # ==========================================
 resource "aws_iam_role" "codepipeline" {
-  name = "${var.project}-${var.env}-iam-${var.location}-pipelinerole"
+  name = "${var.project_name}-${var.environment}-iam-${var.aws_region}-pipelinerole"
   assume_role_policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "codepipeline.amazonaws.com" } }]
@@ -121,22 +121,22 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "s3:PutObject", "s3:PutObjectAcl", "s3:GetObject", "s3:GetObjectVersion"
         ],
         Resource = [
-          var.s3_artifacts_arn,
-          "${var.s3_artifacts_arn}/*"
+          var.s3_bucket_artifacts_arn,
+          "${var.s3_bucket_artifacts_arn}/*"
         ]
       },
       {
         Effect = "Allow",
         Action = ["codebuild:BatchGetBuilds", "codebuild:StartBuild", "codebuild:BatchGetBuildBatches", "codebuild:StartBuildBatch"],
         Resource = [
-          "arn:aws:codebuild:${var.region}:${var.account_id}:project/${var.project}-${var.env}-cb-${var.location}-api",
-          "arn:aws:codebuild:${var.region}:${var.account_id}:project/${var.project}-${var.env}-cb-${var.location}-web"
+          "arn:aws:codebuild:${var.aws_region}:${var.aws_account_id}:project/${var.project_name}-${var.environment}-cb-${var.aws_region}-api",
+          "arn:aws:codebuild:${var.aws_region}:${var.aws_account_id}:project/${var.project_name}-${var.environment}-cb-${var.aws_region}-web"
         ]
       },
       {
         Effect   = "Allow",
         Action   = ["codeconnections:UseConnection", "codestar-connections:UseConnection"],
-        Resource = [var.codestar_connection_arn]
+        Resource = [var.github_connection_arn]
       },
       {
         Effect = "Allow",
@@ -146,15 +146,15 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "codedeploy:ListDeploymentGroups", "codedeploy:GetDeploymentGroup", "codedeploy:GetApplicationRevision"
         ],
         Resource = [
-          "arn:aws:codedeploy:${var.region}:${var.account_id}:application:${var.project}-cdapp-${var.location}-*",
-          "arn:aws:codedeploy:${var.region}:${var.account_id}:deploymentgroup:${var.project}-cdapp-${var.location}-api/${var.project}-${var.env}-cdgroup-${var.location}-api",
-          "arn:aws:codedeploy:${var.region}:${var.account_id}:deploymentgroup:${var.project}-cdapp-${var.location}-web/${var.project}-${var.env}-cdgroup-${var.location}-web"
+          "arn:aws:codedeploy:${var.aws_region}:${var.aws_account_id}:application:${var.project_name}-${var.environment}-cdapp-${var.aws_region}-*",
+          "arn:aws:codedeploy:${var.aws_region}:${var.aws_account_id}:deploymentgroup:${var.project_name}-${var.environment}-cdapp-${var.aws_region}-api/${var.project_name}-${var.environment}-cdgroup-${var.aws_region}-api",
+          "arn:aws:codedeploy:${var.aws_region}:${var.aws_account_id}:deploymentgroup:${var.project_name}-${var.environment}-cdapp-${var.aws_region}-web/${var.project_name}-${var.environment}-cdgroup-${var.aws_region}-web"
         ]
       },
       {
         Effect   = "Allow",
         Action   = ["codedeploy:GetDeploymentConfig"],
-        Resource = ["arn:aws:codedeploy:${var.region}:${var.account_id}:deploymentconfig:CodeDeployDefault.OneAtATime"]
+        Resource = ["arn:aws:codedeploy:${var.aws_region}:${var.aws_account_id}:deploymentconfig:CodeDeployDefault.OneAtATime"]
       },
       {
         Effect   = "Allow",

@@ -1,6 +1,6 @@
 # Security Group cho EC2 Instance
 resource "aws_security_group" "app_sg" {
-  name        = "${var.project}-${var.env}-sg-${var.location}-app"
+  name        = "${var.project_name}-${var.environment}-sg-${var.aws_region}-app"
   description = "Allow HTTP, HTTPS and SSH"
   vpc_id      = var.vpc_id
 
@@ -54,38 +54,38 @@ resource "tls_private_key" "ec2_ssh_key" {
 
 # 2. Tạo AWS Key Pair từ Public Key
 resource "aws_key_pair" "ec2_key_pair" {
-  key_name   = "${var.project}-${var.env}-key"
+  key_name   = "${var.project_name}-${var.environment}-${var.aws_region}-key"
   public_key = tls_private_key.ec2_ssh_key.public_key_openssh
 }
 
 # 3. Tự động lưu Private Key ra file .pem tại máy local để bạn có thể SSH
 resource "local_file" "private_key_pem" {
   content         = tls_private_key.ec2_ssh_key.private_key_pem
-  filename        = "${path.root}/${var.project}-${var.env}-key.pem"
+  filename        = "${path.root}/${var.project_name}-${var.environment}-${var.aws_region}-key.pem"
   file_permission = "0400" # Phân quyền chỉ đọc để bảo mật file pem
 }
 
 # Khởi tạo EC2 Instance chạy cả Web và API
-resource "aws_instance" "app_server" {
-  ami                  = data.aws_ami.amazon_linux_2023.id
-  instance_type        = var.instance_type
-  subnet_id            = var.subnet_id
+resource "aws_instance" "this" {
+  ami                    = data.aws_ami.amazon_linux_2023.id
+  instance_type          = var.ec2_instance_type
+  subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.app_sg.id]
-  iam_instance_profile = var.iam_instance_profile
-  key_name = aws_key_pair.ec2_key_pair.key_name
+  iam_instance_profile   = var.iam_instance_profile_name
+  key_name               = aws_key_pair.ec2_key_pair.key_name
 
   # Đọc file bash script và truyền các biến bảo mật vào (Inject Variables)
-  user_data = templatefile("${path.module}/setup.sh.tpl", {
-    mysql_root_pass = var.mysql_root_pass
-    db_name         = var.db_name
-    db_user         = var.db_user
-    db_pass         = var.db_pass
-    aws_region      = var.region
-    project         = var.project
+  user_data = templatefile("${path.module}/setup.sh.tftpl", {
+    DB_ROOT_PASSWORD = var.db_root_password
+    DB_NAME          = var.db_name
+    DB_USERNAME      = var.db_username
+    DB_PASSWORD      = var.db_password
+    AWS_REGION       = var.aws_region
+    PROJECT_NAME     = var.project_name
   })
 
   tags = {
-    Name        = var.project
-    Environment = var.env
+    Name        = var.project_name
+    Environment = var.environment
   }
 }

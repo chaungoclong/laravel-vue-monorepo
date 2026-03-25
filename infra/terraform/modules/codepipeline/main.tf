@@ -1,11 +1,11 @@
 resource "aws_codepipeline" "api" {
-  name          = "${var.project}-${var.env}-cp-${var.location}-api"
-  role_arn      = var.codepipeline_role_arn
-  pipeline_type = "V2" # Bắt buộc phải là V2 để hỗ trợ  
+  name           = "${var.project_name}-${var.environment}-cp-${var.aws_region}-api"
+  role_arn       = var.iam_role_arn
+  pipeline_type  = "V2"     # Bắt buộc phải là V2 để hỗ trợ  
   execution_mode = "QUEUED" # Chế độ thực thi mới, cho phép xếp hàng các lần chạy pipeline nếu có nhiều commit liên tiếp
 
   artifact_store {
-    location = var.artifacts_bucket
+    location = var.s3_bucket_artifacts_id
     type     = "S3"
   }
 
@@ -15,7 +15,7 @@ resource "aws_codepipeline" "api" {
       source_action_name = "Source"
       push {
         branches {
-          includes = [var.github_branch]
+          includes = [var.github_branch_name]
         }
         file_paths {
           includes = ["apps/api/**"] # Chỉ kích hoạt khi có thay đổi trong thư mục apps/api/
@@ -35,8 +35,8 @@ resource "aws_codepipeline" "api" {
       output_artifacts = ["source_output"]
       configuration = {
         ConnectionArn    = var.github_connection_arn
-        FullRepositoryId = var.github_repo
-        BranchName       = var.github_branch
+        FullRepositoryId = var.github_repository_name
+        BranchName       = var.github_branch_name
         DetectChanges    = "false" # Tắt trigger mặc định, nhường quyền cho block `trigger` ở trên
       }
     }
@@ -52,7 +52,7 @@ resource "aws_codepipeline" "api" {
       input_artifacts  = ["source_output"]
       output_artifacts = ["build_output"]
       version          = "1"
-      configuration    = { ProjectName = var.codebuild_api_name }
+      configuration    = { ProjectName = var.codebuild_project_api_name }
     }
   }
 
@@ -66,21 +66,21 @@ resource "aws_codepipeline" "api" {
       input_artifacts = ["build_output"]
       version         = "1"
       configuration = {
-        ApplicationName     = var.codedeploy_api_name
-        DeploymentGroupName = var.codedeploy_api_deployment_group_name
+        ApplicationName     = var.codedeploy_app_api_name
+        DeploymentGroupName = var.codedeploy_group_api_name
       }
     }
   }
 }
 
 resource "aws_codepipeline" "web" {
-  name          = "${var.project}-${var.env}-cp-${var.location}-web"
-  role_arn      = var.codepipeline_role_arn
-  pipeline_type = "V2" # Bắt buộc phải là V2 để hỗ trợ Trigger
+  name           = "${var.project_name}-${var.environment}-cp-${var.aws_region}-web"
+  role_arn       = var.iam_role_arn
+  pipeline_type  = "V2"     # Bắt buộc phải là V2 để hỗ trợ Trigger
   execution_mode = "QUEUED" # Chế độ thực thi mới, cho phép xếp hàng các lần chạy pipeline nếu có nhiều commit liên tiếp
 
   artifact_store {
-    location = var.artifacts_bucket
+    location = var.s3_bucket_artifacts_id
     type     = "S3"
   }
 
@@ -90,7 +90,7 @@ resource "aws_codepipeline" "web" {
       source_action_name = "Source"
       push {
         branches {
-          includes = [var.github_branch]
+          includes = [var.github_branch_name]
         }
         file_paths {
           includes = ["apps/web/**"] # Chỉ kích hoạt khi có thay đổi trong thư mục apps/web/
@@ -110,8 +110,8 @@ resource "aws_codepipeline" "web" {
       output_artifacts = ["source_output"]
       configuration = {
         ConnectionArn    = var.github_connection_arn
-        FullRepositoryId = var.github_repo
-        BranchName       = var.github_branch
+        FullRepositoryId = var.github_repository_name
+        BranchName       = var.github_branch_name
         DetectChanges    = "false" # Tắt trigger mặc định, nhường quyền cho block `trigger` ở trên
       }
     }
@@ -127,7 +127,7 @@ resource "aws_codepipeline" "web" {
       input_artifacts  = ["source_output"]
       output_artifacts = ["build_output"]
       version          = "1"
-      configuration    = { ProjectName = var.codebuild_web_name }
+      configuration    = { ProjectName = var.codebuild_project_web_name }
     }
   }
 
@@ -141,8 +141,8 @@ resource "aws_codepipeline" "web" {
       input_artifacts = ["build_output"]
       version         = "1"
       configuration = {
-        ApplicationName     = var.codedeploy_web_name
-        DeploymentGroupName = var.codedeploy_web_deployment_group_name
+        ApplicationName     = var.codedeploy_app_web_name
+        DeploymentGroupName = var.codedeploy_group_web_name
       }
     }
   }
