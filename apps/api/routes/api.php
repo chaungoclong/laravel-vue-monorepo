@@ -64,3 +64,52 @@ Route::post('v1/test-upload', static function (Request $request) {
 		]
 	]);
 });
+
+Route::post('v1/test-queue', static function (Request $request) {
+	$startTime = Carbon::now();
+
+	Log::info('Test Queue API (Closure) called at: ' . $startTime->toDateTimeString());
+
+	// Validate dữ liệu từ request
+	$data = $request->validate([
+		'message' => 'nullable|string|max:500',
+		'delay' => 'nullable|integer|min:0|max:30',   // delay tối đa 30 giây
+	]);
+
+	$customMessage = $data['message'] ?? 'Test Queue Job bằng Closure thành công!';
+	$delaySeconds = (int)($data['delay'] ?? 0);
+
+	// Dispatch closure vào queue
+	$pendingDispatch = dispatch(static function () use ($customMessage) {
+		Log::info('=== QUEUE CLOSURE JOB STARTED ===');
+		Log::info('Message from API: ' . $customMessage);
+		Log::info('Processed at: ' . now()->toDateTimeString());
+
+		// Giả lập công việc mất thời gian (để thấy rõ là async)
+		sleep(3);
+
+		Log::info('=== QUEUE CLOSURE JOB COMPLETED ===');
+	});
+
+	// Thêm delay nếu có
+	if ($delaySeconds > 0) {
+		$pendingDispatch->delay(now()->addSeconds($delaySeconds));
+		$statusMessage = "Job Closure đã được đẩy vào queue với delay $delaySeconds giây.";
+	} else {
+		$statusMessage = "Job Closure đã được dispatch thành công vào queue.";
+	}
+
+	$endTime = Carbon::now();
+
+	return response()->json([
+		'status' => 'success',
+		'message' => $statusMessage,
+		'dispatched_at' => $startTime->toDateTimeString(),
+		'response_time' => $startTime->diffInMilliseconds($endTime) . ' ms',
+		'job_data' => [
+			'message' => $customMessage,
+			'delay' => $delaySeconds . ' giây'
+		],
+		'note' => 'Mở terminal chạy "php artisan queue:work" để xem job chạy. Kiểm tra file storage/logs/laravel.log'
+	]);
+});
