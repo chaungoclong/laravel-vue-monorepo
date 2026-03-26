@@ -12,7 +12,3 @@ artifacts:
   base-directory: apps/api
   files:
     - '**/*'
-cache:
-  key: vendor-$(codebuild-hash-files 'apps/api/composer.lock')
-  paths:
-    - 'apps/api/vendor/**/*'
