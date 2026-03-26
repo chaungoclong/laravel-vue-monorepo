@@ -38,6 +38,8 @@ echo "Deploying with APP_ENV=$APP_ENV"
 
 mkdir -p "$APP_DIR/releases"
 
+chown -R $DEPLOY_USER:$DEPLOY_GROUP "$APP_DIR"
+
 # Đảm bảo appspec.yml đã copy code vào $APP_DIR/temp_release
 if [ -d "$APP_DIR/temp_release" ]; then
     mv "$APP_DIR/temp_release" "$RELEASE_DIR"
@@ -91,23 +93,14 @@ sudo systemctl reload php-fpm.service
 sudo systemctl reload nginx
 
 # Khởi động lại Supervisor - Thêm kiểm tra trạng thái trước
-if sudo systemctl is-active --quiet supervisord; then
-    sudo supervisorctl reread
-    sudo supervisorctl update
-    # Restart cụ thể các queue workers nếu bạn có đặt tên group
-    # sudo supervisorctl restart all
-    echo "Supervisor updated successfully."
-else
-    echo "Cảnh báo: Supervisor không chạy. Đang thử khởi động lại..."
-    sudo systemctl start supervisord
-fi
+sudo supervisorctl reread
+sudo supervisorctl update
 
 # Luôn chạy lệnh này để báo hiệu cho workers tự thoát khi xong job
 php artisan queue:restart
 
 # 9. Dọn dẹp: Chỉ giữ lại 3 bản deploy gần nhất
 cd "$APP_DIR/releases"
-# Sửa lỗi nhẹ: ls -dt trả về tên kèm '/', tail -n +4 lấy từ dòng thứ 4 trở đi
 ls -1dt $APP_DIR/releases/* | tail -n +4 | xargs -d '\n' rm -rf
 
 echo "Deploy Backend cho $APP_ENV hoàn tất!"
