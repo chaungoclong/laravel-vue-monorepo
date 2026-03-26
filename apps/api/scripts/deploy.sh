@@ -92,6 +92,44 @@ sudo systemctl reload php-fpm.service
 # Load lại NGINX
 sudo systemctl reload nginx
 
+CONF_FILE="/etc/supervisor/supervisord.conf"
+SOCKET_FILE="/var/run/supervisor.sock"
+
+echo "=== KIỂM TRA TRẠNG THÁI SUPERVISOR TRƯỚC KHI REREAD ==="
+
+# 1. Kiểm tra file cấu hình
+echo "[1] Kiểm tra file cấu hình:"
+if [ -f "$CONF_FILE" ]; then
+    echo "✅ Đã tìm thấy: $CONF_FILE"
+    echo "--- Nội dung section [unix_http_server] ---"
+    grep -A 3 "\[unix_http_server\]" "$CONF_FILE"
+    echo "--- Nội dung section [supervisorctl] ---"
+    grep -A 3 "\[supervisorctl\]" "$CONF_FILE"
+else
+    echo "❌ KHÔNG tìm thấy file cấu hình tại: $CONF_FILE"
+fi
+
+echo ""
+
+# 2. Kiểm tra file socket
+echo "[2] Kiểm tra file socket:"
+if [ -S "$SOCKET_FILE" ]; then
+    echo "✅ Đã tìm thấy file socket: $SOCKET_FILE"
+    echo "--- Thông tin chi tiết (Quyền/Sở hữu) ---"
+    ls -la "$SOCKET_FILE"
+else
+    echo "❌ KHÔNG tìm thấy file socket tại: $SOCKET_FILE"
+    echo "Gợi ý: Kiểm tra xem supervisord đã chạy chưa bằng: ps aux | grep supervisord"
+fi
+
+echo ""
+
+# 3. Kiểm tra tiến trình đang chạy
+echo "[3] Kiểm tra tiến trình supervisord:"
+pgrep -a supervisord || echo "❌ Không có tiến trình supervisord nào đang chạy."
+
+echo "======================================================="
+
 # Khởi động lại Supervisor - Thêm kiểm tra trạng thái trước
 supervisorctl reread
 supervisorctl update
