@@ -93,8 +93,8 @@ sudo systemctl reload php-fpm.service
 sudo systemctl reload nginx
 
 # Khởi động lại Supervisor - Thêm kiểm tra trạng thái trước
-sudo supervisorctl reread
-sudo supervisorctl update
+supervisorctl reread
+supervisorctl update
 
 # Luôn chạy lệnh này để báo hiệu cho workers tự thoát khi xong job
 php artisan queue:restart

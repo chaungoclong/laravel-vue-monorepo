@@ -146,6 +146,14 @@ SYSTEMD_EOF
 systemctl daemon-reload
 systemctl enable supervisord
 systemctl start supervisord
+
+# Chờ cho đến khi file socket thực sự tồn tại
+RETRIES=10
+while [ ! -S /var/run/supervisor.sock ] && [ $RETRIES -gt 0 ]; do
+    echo "Đang chờ Supervisor socket... ($RETRIES)"
+    sleep 2
+    RETRIES=$((RETRIES - 1))
+done
 echo "✅ Cài đặt và khởi động Supervisor thành công."
 
 echo "[Bước 9/12] Đang thiết lập User và quyền thư mục dự án..."
