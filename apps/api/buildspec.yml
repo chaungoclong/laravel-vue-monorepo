@@ -1,13 +1,8 @@
 version: 0.2
 phases:
-  install:
-    runtime-versions:
-      php: 8.4
   build:
     commands:
-      - cd apps/api
-      - echo "Bắt đầu cài đặt thư viện Backend..."
-      - composer install --no-dev --optimize-autoloader
+      - echo "Đóng gói API Artifact..."
 artifacts:
   base-directory: apps/api
   files:
