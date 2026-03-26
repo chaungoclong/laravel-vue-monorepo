@@ -10,7 +10,7 @@ Route::get('/user', static function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('v1/test', static function () {
-	Log::info('Time1: ' . Carbon::now()->toDateTimeString());
+	Log::info('Time test cache: ' . Carbon::now()->toDateTimeString());
 	return response()->json([
 		'status' => 'success',
 		'message' => 'Laravel API test hoạt động',
