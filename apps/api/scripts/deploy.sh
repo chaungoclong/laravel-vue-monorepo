@@ -72,6 +72,7 @@ chmod -R 775 "$RELEASE_DIR/storage" "$RELEASE_DIR/bootstrap/cache"
 
 # 6. Tối ưu hóa Laravel
 cd "$RELEASE_DIR"
+composer install --no-dev --optimize-autoloader
 php artisan config:clear
 php artisan migrate --force
 php artisan optimize:clear
