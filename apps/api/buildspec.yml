@@ -1,9 +1,18 @@
 version: 0.2
 phases:
+  install:
+    runtime-versions:
+      php: 8.4
   build:
     commands:
-      - echo "Đóng gói API Artifact..."
+      - cd apps/api
+      - echo "Bắt đầu cài đặt thư viện Backend..."
+      - composer install --no-dev --optimize-autoloader
 artifacts:
   base-directory: apps/api
   files:
     - '**/*'
+cache:
+  key: vendor-$(codebuild-hash-files 'apps/api/composer.lock')
+  paths:
+    - 'apps/api/vendor/**/*'
